@@ -1,0 +1,17 @@
+{% if pager.pages > 1 %}
+<nav class="pager">
+  {% set prev_value = pager.page - 1 %}
+  {% set next_value = pager.page + 1 %}
+  {% if pager.has_prev %}
+  <a href="{{ request.url.include_query_params(**{pager.param: prev_value}) }}">上一页</a>
+  {% else %}
+  <span>上一页</span>
+  {% endif %}
+  <strong>{{ pager.page }} / {{ pager.pages }}</strong>
+  {% if pager.has_next %}
+  <a href="{{ request.url.include_query_params(**{pager.param: next_value}) }}">下一页</a>
+  {% else %}
+  <span>下一页</span>
+  {% endif %}
+</nav>
+{% endif %}

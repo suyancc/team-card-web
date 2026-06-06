@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% set title = "售卡后台" %}
+{% block body %}
+<main class="admin-shell">
+  <aside class="admin-sidebar">
+    <div>
+      <span class="brand-mark">TC</span>
+      <h1>售卡后台</h1>
+      <p>上传账号库存，生成绑定账号数量的卡密，查看兑换下载状态。</p>
+    </div>
+    <div class="sidebar-actions">
+      <span class="admin-user">{{ admin_username }}</span>
+      <a class="side-link" href="/">打开兑换页</a>
+      <form action="/admin/logout" method="post">
+        <button class="side-button" type="submit">退出登录</button>
+      </form>
+    </div>
+  </aside>
+
+  <section class="admin-content">
+    {% if error %}
+    <div class="alert error">{{ error }}</div>
+    {% endif %}
+    {% if ok %}
+    <div class="alert ok">{{ ok }}</div>
+    {% endif %}
+
+    <section class="stats-grid">
+      <div class="stat"><span>可售账号</span><strong>{{ stats.available_accounts }}</strong></div>
+      <div class="stat"><span>已绑定账号</span><strong>{{ stats.reserved_accounts }}</strong></div>
+      <div class="stat"><span>已下载账号</span><strong>{{ stats.redeemed_accounts }}</strong></div>
+      <div class="stat"><span>未兑换卡密</span><strong>{{ stats.unused_cards }}</strong></div>
+      <div class="stat"><span>已兑换卡密</span><strong>{{ stats.redeemed_cards }}</strong></div>
+    </section>
+
+    <section class="work-grid">
+      <form class="tool-card" action="/admin/upload" method="post" enctype="multipart/form-data">
+        <h2>上传账号 JSON</h2>
+        <p>支持根对象里的 <code>accounts</code> 数组，也支持单账号对象。</p>
+        <input type="file" name="file" accept=".json,application/json" required>
+        <button type="submit">上传并拆分保存</button>
+      </form>
+
+      <form class="tool-card" action="/admin/cards" method="post">
+        <h2>生成卡密</h2>
+        <p>生成时会从可售库存中预留指定数量账号，避免二次销售。</p>
+        <label>账号数量
+          <input type="number" name="account_count" min="1" max="10000" value="10" required>
+        </label>
+        <label>生成卡密数量
+          <input type="number" name="card_quantity" min="1" max="1000" value="1" required>
+        </label>
+        <label>备注
+          <input type="text" name="note" placeholder="可选，例如 10账号套餐">
+        </label>
+        <button type="submit">生成卡密</button>
+      </form>
+    </section>
+
+    {% if generated_codes %}
+    <section class="generated-section">
+      <div class="section-title">
+        <h2>本次生成卡密</h2>
+        <button type="button" class="copy-button" data-copy-target="generated-codes">复制全部</button>
+      </div>
+      <textarea id="generated-codes" readonly>{% for card in generated_codes %}{{ card.code }}
+{% endfor %}</textarea>
+    </section>
+    {% endif %}
+
+    <section class="table-section">
+      <div class="section-title">
+        <h2>卡密列表</h2>
+        <span>共 {{ cards_page.total }} 条，每页 {{ cards_page.page_size }} 条</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>卡密</th>
+              <th>账号数</th>
+              <th>状态</th>
+              <th>下载次数</th>
+              <th>创建时间</th>
+              <th>下载时间</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for card in cards_page.items %}
+            <tr>
+              <td><code>{{ card.code }}</code></td>
+              <td>{{ card.bound_accounts }}/{{ card.account_count }}</td>
+              <td><span class="badge {{ card.status }}">{{ "未兑换" if card.status == "unused" else "已下载" }}</span></td>
+              <td>{{ card.download_count }}</td>
+              <td>{{ card.created_at }}</td>
+              <td>{{ card.downloaded_at or "-" }}</td>
+              <td>{{ card.note or "-" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="empty">暂无卡密</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set pager = cards_page %}
+      {% include "_pager.html" %}
+    </section>
+
+    <section class="table-section">
+      <div class="section-title">
+        <h2>账号库存</h2>
+        <span>共 {{ accounts_page.total }} 个，每页 {{ accounts_page.page_size }} 个</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>状态</th>
+              <th>卡密ID</th>
+              <th>上传批次</th>
+              <th>创建时间</th>
+              <th>下载时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for account in accounts_page.items %}
+            <tr>
+              <td>{{ account.id }}</td>
+              <td class="name-cell">{{ account.name }}</td>
+              <td><span class="badge {{ account.status }}">{{ {"available":"可售","reserved":"已绑定","redeemed":"已下载"}[account.status] }}</span></td>
+              <td>{{ account.card_id or "-" }}</td>
+              <td>{{ account.upload_batch }}</td>
+              <td>{{ account.created_at }}</td>
+              <td>{{ account.downloaded_at or "-" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="empty">暂无账号库存</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set pager = accounts_page %}
+      {% include "_pager.html" %}
+    </section>
+
+    <section class="table-section">
+      <div class="section-title">
+        <h2>下载记录</h2>
+        <span>共 {{ redemptions_page.total }} 条，每页 {{ redemptions_page.page_size }} 条</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>卡密</th>
+              <th>格式</th>
+              <th>账号数</th>
+              <th>下载时间</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in redemptions_page.items %}
+            <tr>
+              <td><code>{{ item.code }}</code></td>
+              <td>{{ item.format }}</td>
+              <td>{{ item.account_count }}</td>
+              <td>{{ item.downloaded_at }}</td>
+              <td>{{ item.client_ip or "-" }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="empty">暂无下载记录</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set pager = redemptions_page %}
+      {% include "_pager.html" %}
+    </section>
+  </section>
+</main>
+<script>
+  document.querySelectorAll("[data-copy-target]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const target = document.getElementById(button.dataset.copyTarget);
+      if (!target) return;
+      await navigator.clipboard.writeText(target.value || target.textContent || "");
+      const original = button.textContent;
+      button.textContent = "已复制";
+      setTimeout(() => { button.textContent = original; }, 1200);
+    });
+  });
+</script>
+{% endblock %}

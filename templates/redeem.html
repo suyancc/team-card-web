@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set title = "账号卡密兑换" %}
+{% block body %}
+<main class="redeem-shell">
+  <section class="redeem-panel">
+    <div class="brand-row">
+      <span class="brand-mark">TC</span>
+    </div>
+    <div class="redeem-copy">
+      <p class="eyebrow">Account Delivery</p>
+      <h1>卡密兑换</h1>
+      <p>输入卡密后先确认可下载账号数量，再选择 Sub2API 或 CPA 格式下载。下载后卡密会锁定为已使用。</p>
+    </div>
+
+    {% if error %}
+    <div class="alert error">{{ error }}</div>
+    {% endif %}
+    {% if ok %}
+    <div class="alert ok">{{ ok }}</div>
+    {% endif %}
+
+    <form class="redeem-form" action="/redeem" method="post">
+      <label for="code">卡密</label>
+      <div class="redeem-input-row">
+        <input id="code" name="code" value="{{ last_code or '' }}" placeholder="例如 ABC123-DEF456-GHI789" autocomplete="off" required>
+        <button type="submit">兑换卡密</button>
+      </div>
+    </form>
+
+    {% if claim %}
+    <section class="download-panel">
+      <div>
+        <span>可下载账号数量</span>
+        <strong>{{ claim.account_count }}</strong>
+      </div>
+      <form action="/redeem/download" method="post">
+        <input type="hidden" name="code" value="{{ claim.code }}">
+        <input type="hidden" name="export_format" value="sub2api">
+        <button type="submit">下载 Sub2API</button>
+      </form>
+      <form action="/redeem/download" method="post">
+        <input type="hidden" name="code" value="{{ claim.code }}">
+        <input type="hidden" name="export_format" value="cpa">
+        <button type="submit" class="secondary-button">下载 CPA 格式</button>
+      </form>
+    </section>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
