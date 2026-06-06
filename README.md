@@ -2,6 +2,20 @@
 
 Python + FastAPI + SQLite 售卡网站。
 
+## 界面预览
+
+### 兑换页
+
+![兑换页](docs/screenshots/redeem-page.png)
+
+### 后台登录
+
+![后台登录](docs/screenshots/admin-login.png)
+
+### 售卡后台
+
+![售卡后台](docs/screenshots/admin-dashboard.png)
+
 ## 功能
 
 - 后台上传账号 JSON，自动读取 `accounts` 数组并按单账号拆分保存。

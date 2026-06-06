@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
+import os
 from pathlib import Path
 from typing import Iterator
 
@@ -10,7 +11,7 @@ from .time_utils import SQLITE_SHANGHAI_NOW
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "cards.db"
+DB_PATH = Path(os.getenv("TEAM_CARD_DB_PATH", DATA_DIR / "cards.db"))
 
 
 def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> dict:
@@ -18,7 +19,7 @@ def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> dict:
 
 
 def get_connection() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
     conn.row_factory = dict_factory
     conn.execute("PRAGMA foreign_keys = ON")
